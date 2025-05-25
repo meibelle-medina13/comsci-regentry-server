@@ -8,18 +8,24 @@ export async function getMasterlist(request, response) {
     if (!sort || !filter) {
       response.write(JSON.stringify({
         'success': false,
+        'data': null,
         'message': 'Invalid data. Expecting `sort`, `filter` parameters.',
       }, undefined, 4))
       return response.end()
     }
     else {
-      const data = await student.get(filter, sort)
-      response.write(JSON.stringify(data, undefined, 4))
+      const res = await student.get(filter, sort)
+      response.write(JSON.stringify({
+        'success': true,
+        'data': res,
+        'message': null
+      }, undefined, 4))
       return response.end()
     }
   } catch (error) {
     response.write(JSON.stringify({
       'success': false,
+      'data': null,
       'message': error.message
     }, undefined, 4))
     return response.end()

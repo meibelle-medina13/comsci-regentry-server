@@ -4,26 +4,54 @@ export async function studentLog(request, response) {
   response.setHeader('Content-Type', 'application/json')
   try {
     const data = request?.body
-    const csims_number = data.csims_number
+    const type = data.type.toLowerCase()
+    const number = data.number
     const time = data.time
+    const activity = data.activity.toLowerCase()
 
-    if (!csims_number || !time) {
+    if (!type || !number || !time || !activity) {
       response.write(JSON.stringify({
         'success': false,
-        'message': 'Invalid data. Expecting `csims`, `timestamp`.'
+        'data': null,
+        'message': 'Invalid data. Expecting `type`, `number`, `timestamp`, `activity`.'
       }, undefined, 4))
       return response.end()
     }
-
-    const res = await log.addLog(csims_number, time)
-    response.write(JSON.stringify({
-      'success': true,
-      'message': res
-    }, undefined, 4))
+    
+    const typeOption = ["student", "csims"]
+    const activityOption = ["in", "out"]
+    if (typeOption.includes(type) && activityOption.includes(activity)) {
+      const res = await log.addLog(type, number, time, activity)
+      if (typeof(res) == "string") {
+        response.write(JSON.stringify({
+          'success': true,
+          'data': null,
+          'message': res
+        }, undefined, 4))
+        return response.end()
+      }
+      else {
+       response.write(JSON.stringify({
+          'success': true,
+          'data': res,
+          'message': null
+        }, undefined, 4))
+        return response.end() 
+      }
+    }
+    else {
+      response.write(JSON.stringify({
+        'success': false,
+        'data': null,
+        'message': 'Invalid `type` and/or `activity` data. Expecting (`student` or `csims`) and (`in` or `out`).'
+      }, undefined, 4))
+      return response.end()
+    }
   }
   catch (err) {
     response.write(JSON.stringify({
       'success': false,
+      'data': null,
       'message': err.message
     }, undefined, 4))
   }
@@ -36,26 +64,37 @@ export async function getAllLogs(request, response) {
     const data = request?.query
     const sorting_param = data.sort
     const res = await log.getLogs(sorting_param)
-    response.write(JSON.stringify(res, undefined, 4))
+    response.write(JSON.stringify({
+      'success': true,
+      'data': res,
+      'message': null
+    }, undefined, 4))
     return response.end()
   } catch (error) {
     response.write(JSON.stringify({
       'success': false,
+      'data': null,
       'message': error.message
     }, undefined, 4))
     return response.end()
   }
 }
 
-export async function logSummary(request, response) {
+export async function logStatistics(request, response) {
   response.setHeader('Content-Type', 'application/json')
   try {
-    const res = await log.getLogSummary()
-    response.write(JSON.stringify(res, undefined, 4))
+    const res = await log.getLogStatistics()
+    response.write(JSON.stringify({
+      'success': true,
+      'data': res,
+      'message': null
+    }, undefined, 4))
+    return response.end()
   }
   catch (err) {
     response.write(JSON.stringify({
       'success': false,
+      'data': null,
       'message': err.message
     }, undefined, 4))
   }
@@ -66,11 +105,38 @@ export async function recentLogs(request, response) {
   response.setHeader('Content-Type', 'application/json')
   try {
     const res = await log.getRecentLogs()
-    response.write(JSON.stringify(res, undefined, 4))
+    response.write(JSON.stringify({
+      'success': true,
+      'data': res,
+      'message': null
+    }, undefined, 4))
+    return response.end()
   }
   catch (err) {
     response.write(JSON.stringify({
       'success': false,
+      'data': null,
+      'message': err.message
+    }, undefined, 4))
+  }
+  return response.end()
+}
+
+export async function logSummary(request, response) {
+  response.setHeader('Content-Type', 'application/json')
+  try {
+    const res = await log.getLogSummary()
+    response.write(JSON.stringify({
+      'success': true,
+      'data': res,
+      'message': null
+    }, undefined, 4))
+    return response.end()
+  }
+  catch (err) {
+    response.write(JSON.stringify({
+      'success': false,
+      'data': null,
       'message': err.message
     }, undefined, 4))
   }
