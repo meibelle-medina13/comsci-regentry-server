@@ -84,7 +84,7 @@ function addLog(type, number, time, activity) {
           }
         })
       } else {
-        resolve(null)
+        resolve("Student not found.")
       }
     })
   })
