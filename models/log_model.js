@@ -118,15 +118,31 @@ function getLogs(sort) {
         sorting_param = "csims_number"
       }
 
-      databaseInstance.query(`SELECT csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp 
+      databaseInstance.query(`SELECT csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp, activity  
         FROM logs INNER JOIN students ON logs.student_ID = students.ID ORDER BY ${sorting_param}`, (err, results, fields) => {
         if (err) reject (err)
+        for (let i = 0; i < results.length; i++) {
+          if (results[i].activity == 1) {
+            results[i].activity = "IN"
+          }
+          else if (results[i].activity == 0) {
+            results[i].activity = "OUT"
+          }
+        }
         resolve(results)
       })
     } else {
-      databaseInstance.query(`SELECT csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp 
+      databaseInstance.query(`SELECT csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp, activity 
         FROM logs INNER JOIN students ON logs.student_ID = students.ID ORDER BY log_ID`, (err, results, fields) => {
         if (err) reject (err)
+        for (let i = 0; i < results.length; i++) {
+          if (results[i].activity == 1) {
+            results[i].activity = "IN"
+          }
+          else if (results[i].activity == 0) {
+            results[i].activity = "OUT"
+          }
+        }
         resolve(results)
       })
     }
@@ -182,10 +198,18 @@ function getLogStatistics() {
 
 function getRecentLogs() {
   return new Promise((resolve, reject) => {
-    databaseInstance.query(`SELECT csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp 
+    databaseInstance.query(`SELECT csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp, activity 
       FROM logs INNER JOIN students ON logs.student_ID = students.ID ORDER BY log_ID DESC LIMIT 5`, (err, results, fields) => {
       if (err) reject (err)
       if (results.length > 0) {
+        for (let i = 0; i < results.length; i++) {
+          if (results[i].activity == 1) {
+            results[i].activity = "IN"
+          }
+          else if (results[i].activity == 0) {
+            results[i].activity = "OUT"
+          }
+        }
         resolve(results)
       }
     })

@@ -12,7 +12,7 @@ export async function studentLog(request, response) {
     if (!type || !number || !time || !activity) {
       response.write(JSON.stringify({
         'success': false,
-        'data': null,
+        'result': null,
         'message': 'Invalid data. Expecting `type`, `number`, `timestamp`, `activity`.'
       }, undefined, 4))
       return response.end()
@@ -25,7 +25,7 @@ export async function studentLog(request, response) {
       if (typeof(res) == "string") {
         response.write(JSON.stringify({
           'success': true,
-          'data': null,
+          'result': null,
           'message': res
         }, undefined, 4))
         return response.end()
@@ -33,7 +33,7 @@ export async function studentLog(request, response) {
       else {
        response.write(JSON.stringify({
           'success': true,
-          'data': res,
+          'result': res,
           'message': null
         }, undefined, 4))
         return response.end() 
@@ -42,7 +42,7 @@ export async function studentLog(request, response) {
     else {
       response.write(JSON.stringify({
         'success': false,
-        'data': null,
+        'result': null,
         'message': 'Invalid `type` and/or `activity` data. Expecting (`student` or `csims`) and (`in` or `out`).'
       }, undefined, 4))
       return response.end()
@@ -51,7 +51,7 @@ export async function studentLog(request, response) {
   catch (err) {
     response.write(JSON.stringify({
       'success': false,
-      'data': null,
+      'result': null,
       'message': err.message
     }, undefined, 4))
   }
@@ -66,14 +66,14 @@ export async function getAllLogs(request, response) {
     const res = await log.getLogs(sorting_param)
     response.write(JSON.stringify({
       'success': true,
-      'data': res,
+      'result': res,
       'message': null
     }, undefined, 4))
     return response.end()
   } catch (error) {
     response.write(JSON.stringify({
       'success': false,
-      'data': null,
+      'result': null,
       'message': error.message
     }, undefined, 4))
     return response.end()
@@ -86,7 +86,7 @@ export async function logStatistics(request, response) {
     const res = await log.getLogStatistics()
     response.write(JSON.stringify({
       'success': true,
-      'data': res,
+      'result': res,
       'message': null
     }, undefined, 4))
     return response.end()
@@ -94,7 +94,7 @@ export async function logStatistics(request, response) {
   catch (err) {
     response.write(JSON.stringify({
       'success': false,
-      'data': null,
+      'result': null,
       'message': err.message
     }, undefined, 4))
   }
@@ -107,7 +107,7 @@ export async function recentLogs(request, response) {
     const res = await log.getRecentLogs()
     response.write(JSON.stringify({
       'success': true,
-      'data': res,
+      'result': res,
       'message': null
     }, undefined, 4))
     return response.end()
@@ -115,7 +115,7 @@ export async function recentLogs(request, response) {
   catch (err) {
     response.write(JSON.stringify({
       'success': false,
-      'data': null,
+      'result': null,
       'message': err.message
     }, undefined, 4))
   }
@@ -128,7 +128,7 @@ export async function logSummary(request, response) {
     const res = await log.getLogSummary()
     response.write(JSON.stringify({
       'success': true,
-      'data': res,
+      'result': res,
       'message': null
     }, undefined, 4))
     return response.end()
@@ -136,7 +136,7 @@ export async function logSummary(request, response) {
   catch (err) {
     response.write(JSON.stringify({
       'success': false,
-      'data': null,
+      'result': null,
       'message': err.message
     }, undefined, 4))
   }
