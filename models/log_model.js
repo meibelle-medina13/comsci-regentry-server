@@ -223,7 +223,10 @@ function getRecentLogs() {
           }
           data.push(tempData)
         }
-        resolve(data)
+        resolve("No data fetched.")
+      }
+      else {
+        resolve("No data fetched.")
       }
     })
   })

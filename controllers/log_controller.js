@@ -105,12 +105,22 @@ export async function recentLogs(request, response) {
   response.setHeader('Content-Type', 'application/json')
   try {
     const res = await log.getRecentLogs()
-    response.write(JSON.stringify({
-      'success': true,
-      'result': res,
-      'message': null
-    }, undefined, 4))
-    return response.end()
+    if (typeof(res) == "string") {
+      response.write(JSON.stringify({
+        'success': true,
+        'result': null,
+        'message': res
+      }, undefined, 4))
+      return response.end()
+    }
+    else {
+      response.write(JSON.stringify({
+        'success': true,
+        'result': res,
+        'message': null
+      }, undefined, 4))
+      return response.end() 
+    }
   }
   catch (err) {
     response.write(JSON.stringify({
