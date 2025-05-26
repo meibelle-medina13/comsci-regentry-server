@@ -14,13 +14,13 @@ function addLog(type, number, time, activity) {
   let timestamp = time
 
   let [currentHour, currentMinutes, currentSeconds] = time.split(":")
-  if (parseInt(currentHour, 10) < 10) {
+  if (currentHour.length < 2) {
     currentHour = '0' + currentHour
   }
-  if (parseInt(currentMinutes, 10) < 10) {
+  if (currentMinutes.length < 2) {
     currentMinutes = '0' + currentMinutes
   }
-  if (parseInt(currentSeconds, 10) < 10) {
+  if (currentSeconds.length < 2) {
     currentSeconds = '0' + currentSeconds
   }
 
@@ -45,10 +45,10 @@ function addLog(type, number, time, activity) {
         const firstname = result[0].firstname
         const middle = result[0].middle_initial
 
-        databaseInstance.query(`SELECT student_ID, log_timestamp, activity FROM logs ORDER BY log_ID DESC LIMIT 1`,
+        databaseInstance.query(`SELECT student_ID, log_timestamp, activity FROM logs WHERE student_ID = ? ORDER BY log_ID DESC LIMIT 1`, [studentID],
         (err, result) => {
           if (err) reject (err)
-          if (result.length != 0 && result[0].student_ID == studentID) {
+          if (result.length != 0) {
             const [loggedHours, loggedMinutes] = result[0].log_timestamp.split(":")
 
             if (loggedHours == currentHour) {
@@ -202,15 +202,28 @@ function getRecentLogs() {
       FROM logs INNER JOIN students ON logs.student_ID = students.ID ORDER BY log_ID DESC LIMIT 5`, (err, results, fields) => {
       if (err) reject (err)
       if (results.length > 0) {
+        let data = []
         for (let i = 0; i < results.length; i++) {
           if (results[i].activity == 1) {
-            results[i].activity = "IN"
+            results[i].activity = "In"
           }
           else if (results[i].activity == 0) {
-            results[i].activity = "OUT"
+            results[i].activity = "Out"
           }
+          let tempData = {
+            "csims_number": results[i].csims_number,
+            "student_number": results[i].student_number,
+            "lastname": results[i].lastname,
+            "firstname": results[i].firstname,
+            "middle_initial": results[i].middle_initial,
+            "year_level": results[i].year_level,
+            "section": results[i].section,
+            "timestamp": results[i].log_timestamp,
+            "activity": results[i].activity
+          }
+          data.push(tempData)
         }
-        resolve(results)
+        resolve(data)
       }
     })
   })
@@ -226,21 +239,21 @@ function getLogSummary(sort) {
     let summary = {
       "activity": [
         {
-          "name": "in",
+          "name": "IN",
           "value": 0
         },
         {
-          "name": "out",
+          "name": "OUT",
           "value": 0
         }
       ],
       "attendance": [
         {
-          "name": "present",
+          "name": "PRESENT",
           "value": 0
         },
         {
-          "name": "absent",
+          "name": "ABSENT",
           "value": 0
         }
       ]

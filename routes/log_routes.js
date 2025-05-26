@@ -7,6 +7,6 @@ router.post('/', studentLog)
 router.get('/', getAllLogs)
 router.get('/statistics', logStatistics)
 router.get('/summary', logSummary)
-router.get('/most-recent', recentLogs)
+router.get('/recent-logs', recentLogs)
 
 export default router
