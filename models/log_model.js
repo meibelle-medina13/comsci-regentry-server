@@ -155,7 +155,7 @@ function getLogs(sort, filter) {
               data[result[i].lastname + result[i].student_ID].records.push(record)
             } else {
               let tempData = {
-                "_id": result[i].student_ID,
+                "id": result[i].student_ID,
                 "csims_number": result[i].csims_number,
                 "student_number": result[i].student_number,
                 "lastname": result[i].lastname,
@@ -205,7 +205,7 @@ function getLogs(sort, filter) {
             }
             else {
               let tempData = {
-                "_id": result[i].student_ID,
+                "id": result[i].student_ID,
                 "csims_number": result[i].csims_number,
                 "student_number": result[i].student_number,
                 "lastname": result[i].lastname,
