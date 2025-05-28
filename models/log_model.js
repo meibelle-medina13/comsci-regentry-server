@@ -1,4 +1,5 @@
 import databaseInstance from '../database/db.js'
+import excelJS from 'exceljs'
 
 function _sanitize(text) {
   if (typeof text === "number") {
@@ -106,45 +107,151 @@ function insertLog(studentID, lastname, firstname, middle, timestamp, activity) 
   })
 }
 
-function getLogs(sort) {
+function getLogs(sort, filter) {
   return new Promise((resolve, reject) => {
-    if (sort) {
-      const cleanSort = _sanitize(sort)
-      let sorting_param
+    const cleanSort = _sanitize(sort)
+    const cleanFilter = _sanitize(filter)
+    let sorting_param
+    let filter_param
+    let arrangement = "ASC"
 
-      if (cleanSort == "timestamp") {
-        sorting_param = "log_timestamp"
-      } else if (cleanSort == "csims-number") {
-        sorting_param = "csims_number"
-      }
+    if (cleanSort == "timestamp") {
+      sorting_param = "log_timestamp"
+      arrangement = "DESC"
+    } else if (cleanSort == "csims-number") {
+      sorting_param = "csims_number"
+    } else if (cleanSort == "student-number") {
+      sorting_param = "student_number"
+    } else if (cleanSort == "name") {
+      sorting_param = "lastname"
+    }
 
-      databaseInstance.query(`SELECT csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp, activity  
-        FROM logs INNER JOIN students ON logs.student_ID = students.ID ORDER BY ${sorting_param}`, (err, results, fields) => {
+    let filters = ['first-year', 'second-year', 'third-year', 'fourth-year']
+
+    if (cleanFilter != "all") {
+      filter_param = filters.indexOf(cleanFilter) + 1
+      databaseInstance.query(`SELECT student_ID, csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp, activity 
+        FROM logs INNER JOIN students ON logs.student_ID = students.ID  WHERE year_level = ? ORDER BY ${sorting_param} ${arrangement}`, [filter_param], (err, result) => {
         if (err) reject (err)
-        for (let i = 0; i < results.length; i++) {
-          if (results[i].activity == 1) {
-            results[i].activity = "IN"
+        if (result.length > 0) {
+          let data = {}
+          let activity
+          for (let i = 0; i < result.length; i++) {
+            if (result[i].activity == 1) {
+              activity = "In"
+            }
+            else if (result[i].activity == 0) {
+              activity = "Out"
+            }
+            else {
+              activity = null
+            }
+  
+            if (result[i].lastname + result[i].student_ID in data) {
+              let record = {
+                "activity": activity,
+                "timestamp": result[i].log_timestamp
+              }
+              data[result[i].lastname + result[i].student_ID].records.push(record)
+            } else {
+              let tempData = {
+                "_id": result[i].student_ID,
+                "csims_number": result[i].csims_number,
+                "student_number": result[i].student_number,
+                "lastname": result[i].lastname,
+                "firstname": result[i].firstname,
+                "middle_initial": result[i].middle_initial,
+                "year_level": result[i].year_level,
+                "section": result[i].section,
+                "records": [
+                  { 
+                    "activity": activity,
+                    "timestamp": result[i].log_timestamp
+                  }
+                ]
+              }
+              data[result[i].lastname + result[i].student_ID] = tempData
+            }
           }
-          else if (results[i].activity == 0) {
-            results[i].activity = "OUT"
-          }
+          resolve(arrangeTimestamp(data))
+        } else {
+          resolve("No data fetched.")
         }
-        resolve(results)
       })
     } else {
-      databaseInstance.query(`SELECT csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp, activity 
-        FROM logs INNER JOIN students ON logs.student_ID = students.ID ORDER BY log_ID`, (err, results, fields) => {
+      databaseInstance.query(`SELECT student_ID, csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp, activity 
+        FROM logs INNER JOIN students ON logs.student_ID = students.ID ORDER BY ${sorting_param} ${arrangement}`, (err, result) => {
         if (err) reject (err)
-        for (let i = 0; i < results.length; i++) {
-          if (results[i].activity == 1) {
-            results[i].activity = "IN"
+        if (result.length > 0) {
+          let data = {}
+          let activity
+          for (let i = 0; i < result.length; i++) {
+            if (result[i].activity == 1) {
+              activity = "In"
+            }
+            else if (result[i].activity == 0) {
+              activity = "Out"
+            }
+            else {
+              activity = null
+            }
+  
+            if (result[i].lastname + result[i].student_ID in data) {
+              let record = {
+                "activity": activity,
+                "timestamp": result[i].log_timestamp
+              }
+              data[result[i].lastname + result[i].student_ID].records.push(record)
+            }
+            else {
+              let tempData = {
+                "_id": result[i].student_ID,
+                "csims_number": result[i].csims_number,
+                "student_number": result[i].student_number,
+                "lastname": result[i].lastname,
+                "firstname": result[i].firstname,
+                "middle_initial": result[i].middle_initial,
+                "year_level": result[i].year_level,
+                "section": result[i].section,
+                "records": [
+                  { 
+                    "activity": activity,
+                    "timestamp": result[i].log_timestamp
+                  }
+                ]
+              }
+              data[result[i].lastname + result[i].student_ID] = tempData
+            }
           }
-          else if (results[i].activity == 0) {
-            results[i].activity = "OUT"
-          }
+          resolve(arrangeTimestamp(data))
+        } else {
+          resolve("No data fetched.")
         }
-        resolve(results)
       })
+    }
+  })
+}
+
+function arrangeTimestamp(data) {
+  return new Promise((resolve, reject) => {
+    if (data.length != 0) {
+      let dataArray = []
+      for (let key in data) {
+        let records = data[key].records
+        let timestampArray = []
+        for (let recordKey in records) {
+          timestampArray.push(records[recordKey].timestamp)
+        }
+        timestampArray.sort()
+        let sortedRecords = []
+        for (let timeIndex in timestampArray) {
+          const recordIndex = records.findIndex(obj => obj['timestamp'] === timestampArray[timeIndex])
+          sortedRecords.push(records[recordIndex])
+        }
+        data[key].records = sortedRecords
+        dataArray.push(data[key])
+      }
+      resolve(dataArray)
     }
   })
 }
@@ -232,7 +339,7 @@ function getRecentLogs() {
   })
 }
 
-function getLogSummary(sort) {
+function getLogSummary() {
   return new Promise((resolve, reject) => {
     let present = 0
     let absent = 0
@@ -290,10 +397,134 @@ function getLogSummary(sort) {
   })
 }
 
+function deleteLogsPerTime(studentID, timestamp) {
+  return new Promise((resolve, reject) => {
+    databaseInstance.query(`DELETE FROM logs WHERE student_ID = ? AND log_timestamp = ?`, [studentID, timestamp], 
+    (err, result) => {
+      if (err) reject (err)
+      console.log(result.affectedRows)
+      if (result.affectedRows > 0) {
+        resolve({
+          "deleted_row": result.affectedRows
+        })
+      }
+      else {
+        resolve(null)
+      }
+    }
+    )
+  })
+}
+
+function deleteLogsPerStudent(students) {
+  return new Promise((resolve, reject) => {
+    if (students.length > 0) {
+      let successful = []
+      let failed = []
+      for (let i = 0; i < students.length; i++) {
+        console.log(students[i])
+        let id = students[i]
+        databaseInstance.query(`DELETE FROM logs WHERE student_ID = ?`, [id], (err, result) => {
+          console.log(result)
+          if (result != undefined) {
+            if (result.affectedRows > 0) {
+              successful.push(students[i])
+            } else {
+              failed.push(students[i])
+            }
+
+            if ((successful.length) + (failed.length) == students.length) {
+              resolve({
+                "req_to_delete": students,
+                "successfully_deleted": successful,
+                "failed_to_delete": failed
+              })
+            }
+          }
+        })
+      }
+    } else {
+      resolve(null)
+    }
+  })
+}
+
+function exportLogs() {
+  return new Promise((resolve, reject) => {
+    const levels = ["First Year", "Second Year", "Third Year", "Fourth Year"]
+    const workbook = new excelJS.Workbook()
+    for (let i = 1; i <= 4; i++) {
+      databaseInstance.query(`SELECT csims_number, student_number, lastname, firstname, middle_initial, year_level, section, log_timestamp, activity 
+      FROM logs INNER JOIN students ON logs.student_ID = students.ID WHERE year_level = ? ORDER BY lastname`, [i], 
+      (err, result) => {
+        if (err) reject (err)
+        const worksheet = workbook.addWorksheet(levels[i-1])
+        worksheet.columns = [
+          { header: "CSIMS Number", key: "csims", width: 15 }, 
+          { header: "Student Number", key: "student_num", width: 15 },
+          { header: "Last Name", key: "lastname", width: 15 },
+          { header: "First Name", key: "firstname", width: 15 },
+          { header: "Middle Initial", key: "middle", width: 15 },
+          { header: "Year Level", key: "year_level", width: 10 },
+          { header: "Section", key: "section", width: 10 },
+          { header: "Timestamp", key: "timestamp", width: 15 },
+          { header: "Activity", key: "activity", width: 10 }
+        ]
+        
+        for (let j = 0; j < result.length; j++) {
+          let activityValue = null
+          if (result[j].activity == 1) {
+            activityValue = "In"
+          } else if (result[j].activity == 0) {
+            activityValue = "Out"
+          }
+
+          worksheet.addRow({
+            csims: parseInt(result[j].csims_number, 10),
+            student_num: parseInt(result[j].student_number, 10),
+            lastname: result[j].lastname,
+            firstname: result[j].firstname,
+            middle: result[j].middle_initial,
+            year_level: result[j].year_level,
+            section: result[j].section,
+            timestamp: result[j].log_timestamp,
+            activity: activityValue
+          })
+        }
+        if (workbook.worksheets.length == 4) {
+          const newWorkbook = new excelJS.Workbook()
+
+          levels.forEach((year_level) => {
+            const existingSheet = workbook.getWorksheet(year_level)
+            const newSheet = newWorkbook.addWorksheet(year_level)
+
+            existingSheet.eachRow((row, rowNumber) => {
+              row.eachCell((cell, colNumber) => {
+                newSheet.getCell(rowNumber, colNumber).value = cell.value
+                if ([6, 7, 9].includes(colNumber)) {
+                  newSheet.getColumn(colNumber).width = 10
+                } else if ([3, 4].includes(colNumber)) {
+                  newSheet.getColumn(colNumber).width = 20
+                } else {
+                  newSheet.getColumn(colNumber).width = 15
+                }
+              })
+            })
+          })
+          resolve(newWorkbook)
+        }
+      })
+    }
+  })
+}
+
 export default {
   addLog,
   getLogs,
   getLogStatistics,
   getLogSummary,
-  getRecentLogs
+  getRecentLogs,
+  deleteLogsPerTime,
+  deleteLogsPerStudent,
+  exportLogs
 }
